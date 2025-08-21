@@ -2,13 +2,14 @@ import requests
 from bs4 import BeautifulSoup
 import discord
 import asyncio
+import os
 
 # ============================
 # CONFIGURATION
 # ============================
-DISCORD_TOKEN = "YOUR_DISCORD_BOT_TOKEN"   # replace with your bot token
-CHANNEL_ID = 123456789012345678            # replace with your Discord channel ID
-CHECK_INTERVAL = 300                       # check every 300s = 5 minutes
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")   # from Render Environment
+CHANNEL_ID = int(os.getenv("CHANNEL_ID"))    # from Render Environment
+CHECK_INTERVAL = 300                         # 5 minutes
 URL = "https://esoserverstatus.net/"
 
 # ============================
@@ -35,6 +36,7 @@ def get_eso_status():
 # DISCORD BOT SETUP
 # ============================
 intents = discord.Intents.default()
+intents.message_content = True  # needed for reading !status
 client = discord.Client(intents=intents)
 
 async def check_server_status():
@@ -58,4 +60,19 @@ async def on_ready():
     print(f"✅ Logged in as {client.user}")
     client.loop.create_task(check_server_status())
 
+# ============================
+# COMMAND HANDLER (!status)
+# ============================
+@client.event
+async def on_message(message):
+    if message.author == client.user:
+        return  # ignore itself
+
+    if message.content.lower().startswith("!status"):
+        status = get_eso_status()
+        await message.channel.send(f"📡 Xbox EU Server Status: **{status}**")
+
+# ============================
+# RUN BOT
+# ============================
 client.run(DISCORD_TOKEN)
